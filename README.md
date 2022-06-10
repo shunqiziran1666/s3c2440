@@ -39,7 +39,6 @@ ifconfig eth0 up
 ifconfig eth0 192.168.50.188
 
 所以，uboot的ip地址与linux的IP地址不一样，nfs挂载设置的是linux的IP地址！！！
-
 命令：
 set bootargs noinitrd root=/dev/nfs nfsroot=192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new ip=192.168.50.188:192.168.50.62:192.168.50.201:255.255.255.0::eth0:off init=/linuxrc console=ttySAC0,115200
 saveenv
