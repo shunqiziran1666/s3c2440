@@ -6,50 +6,60 @@
 1. 安装交叉编译工具链，安装完交叉工具后，进入该目录下，进入bin目录下，然后pwd拿到bin目录路径。
 
 2. 设置环境变量（该方法source完之后便永久对当前用户有效）
-	vi ~/.bashrc
-	//最后一行添加以下语句
-	export PATH=$PATH:/home/book/xxx（工具链路径）/bin //path后的路径便是你的bin目录路径。
-	source ~/.bashrc。保存退出，该命令执行完毕后make便会自动去此目录下拿工具链进行编译。
-	
-	echo $PATH 查看当前环境变量，环境变量决定shell程序到哪些路径寻找
+   1. vi ~/.bashrc  
+   //最后一行添加以下语句
+   2. export PATH=$PATH:/home/book/${工具链路径}/bin  
+   //path后的路径便是你的bin目录路径。  
+   3. source ~/.bashrc  
+   //保存退出，该命令执行完毕后make便会自动去此目录下拿工具链进行编译。  
+   4. echo $PATH  
+   //查看当前环境变量，环境变量决定shell程序到哪些路径寻找  
 	
 3. 然后就可以执行 arm-linux-gnueabi-gcc -v 观看到版本号了
 
 使用韦东山的4.9的工具链是用来编译内核和uboot的，如果编译APP和文件系统用4.3的工具链。
 
-4. 编译APP
-	export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/local/arm/4.3.2/bin
-	export PATH=/usr/local/arm/4.3.2/bin:$PATH
-	以上两条命令是等效的，但是这种方法只是临时生效，只会对当前终端有效，所以还是改bashrc比较好
-	然后就可以执行 arm-linux-gcc -v 观看到版本号了
+4. 编译APP 
+   1. export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/local/arm/4.3.2/bin
+   2. export PATH=/usr/local/arm/4.3.2/bin:$PATH
+
+        注：以上两条命令是等效的，但是这种方法只是临时生效，只会对当前终端有效，所以还是改bashrc比较好
+
+        然后就可以执行 arm-linux-gcc -v 观看到版本号了
 
 另外需要先编译uboot，然后将编译uboot生成的mkimage文件（tools下面）拷贝到/bin目录下。sudo cp mkimage /bin。  
 可能会提示mkimage没有权限，这时我们可以sudo chmod 777 mkimage
 
 
 ## 如何挂接网络文件系统---NFS
-1. 需要配置服务器允许挂载，在哪里加上下面这句话？在/etc/exports里加上，注意/表示根目录！！！  
-/home/juo/rd_s3c2440/fs/fs_mini_mdev_new *(rw,sync,no_root_squash)  
-保存退出，输入如下命令重启nfs  
+1. 需要配置服务器允许挂载，在哪里加上下面这句话？在/etc/exports里加上，注意 / 表示根目录！！！  
+/home/juo/rd_s3c2440/fs/fs_mini_mdev_new *(rw,sync,no_root_squash)
+
+2. 保存退出，输入如下命令重启nfs  
 sudo /etc/init.d/nfs-kernel-server restart
 
-2. 首先需要有一个正常的文件系统，能够进入linux
+3. 首先需要有一个正常的文件系统，能够进入linux
 
-3. 在文件系统的/etc/init.d rcS文件中加入如下命令：  
+4. 在文件系统的/etc/init.d rcS文件中加入如下命令：  
 ifconfig eth0 up  
 ifconfig eth0 192.168.50.188
 
-所以，uboot的ip地址与linux的IP地址不一样，nfs挂载设置的是linux的IP地址！！！  
-命令：  
-set bootargs noinitrd root=/dev/nfs nfsroot=192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new ip=192.168.50.188:192.168.50.62:192.168.50.201:255.255.255.0::eth0:off init=/linuxrc console=ttySAC0,115200  
+所以，uboot的ip地址与linux的IP地址不一样，nfs挂载设置的是linux的IP地址！！！
+
+//设置ip地址  
+set bootargs noinitrd root=/dev/nfs nfsroot=192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new ip=192.168.50.188:192.168.50.62:192.168.50.201:255.255.255.0::eth0:off init=/linuxrc console=ttySAC0,115200
+
+//保存命令  
 saveenv
 
-4. 关闭防火墙，sudo ufw disable
+5. 关闭防火墙，sudo ufw disable
 
-5. 如果没有uboot，使用oflash工具先烧写uboot，选择boot the system 即uboot选项b，不能从uboot中输入boot启动！
+6. 如果没有uboot，使用oflash工具先烧写uboot，选择boot the system 即uboot选项b，不能从uboot中输入boot启动！
 
-如果不能挂载，先在本地ubuntu试试能不能自己挂载自己，sudo mount -t nfs 192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new /mnt  
-若还不行，烧写dtb fs kernel到开发板，然后开发板内手动试试能不能挂载 mount -t nfs -o nolock 192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new /mnt
+如果不能挂载，先在本地ubuntu试试能不能自己挂载自己:  
+sudo mount -t nfs 192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new /mnt  
+若还不行，烧写dtb fs kernel到开发板，然后开发板内手动试试能不能挂载:  
+mount -t nfs -o nolock 192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new /mnt
 
 
 
