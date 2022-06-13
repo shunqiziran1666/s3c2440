@@ -6,15 +6,13 @@
 1. 安装交叉编译工具链，安装完交叉工具后，进入该目录下，进入bin目录下，然后pwd拿到bin目录路径。
 
 2. 设置环境变量（该方法source完之后便永久对当前用户有效）
-   1. vi ~/.bashrc  
-   //最后一行添加以下语句
-   2. export PATH=$PATH:/home/book/${工具链路径}/bin  
-   //path后的路径便是你的bin目录路径。  
-   3. source ~/.bashrc  
-   //保存退出，该命令执行完毕后make便会自动去此目录下拿工具链进行编译。  
-   4. echo $PATH  
-   //查看当前环境变量，环境变量决定shell程序到哪些路径寻找  
-	
+```c
+1. vim ~/.bashrc  //最后一行添加以下语句
+2. export PATH=$PATH:/home/book/${工具链路径}/bin  //path后的路径便是你的bin目录路径。  
+3. source ~/.bashrc  //保存退出，该命令执行完毕后make便会自动去此目录下拿工具链进行编译。  
+4. echo $PATH  //查看当前环境变量，环境变量决定shell程序到哪些路径寻找
+``` 
+
 3. 然后就可以执行 arm-linux-gnueabi-gcc -v 观看到版本号了
 
 使用韦东山的4.9的工具链是用来编译内核和uboot的，如果编译APP和文件系统用4.3的工具链。
@@ -37,6 +35,7 @@
 1. 需要配置服务器允许挂载，在哪里加上下面这句话？在/etc/exports里加上，注意 / 表示根目录！！！
 ```c
 /home/juo/rd_s3c2440/fs/fs_mini_mdev_new *(rw,sync,no_root_squash)
+//注意，如果根文件系统路径变了，需要重新修改
 ```
 
 2. 保存退出，输入如下命令重启nfs
@@ -56,7 +55,7 @@ ifconfig eth0 192.168.50.188
 
 //设置ip地址
 ```c
-set bootargs noinitrd root=/dev/nfs nfsroot=192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new ip=192.168.50.188:192.168.50.62:192.168.50.201:255.255.255.0::eth0:off init=/linuxrc console=ttySAC0,115200
+set bootargs noinitrd root=/dev/nfs nfsroot=192.168.50.62:/home/juo/rd_s3c2440/s3c2440/fs/fs_mini_mdev_new ip=192.168.50.188:192.168.50.62:192.168.50.201:255.255.255.0::eth0:off init=/linuxrc console=ttySAC0,115200
 ```
 
 //保存命令
@@ -69,10 +68,10 @@ saveenv
 6. 如果没有uboot，使用oflash工具先烧写uboot，选择boot the system 即uboot选项b，不能从uboot中输入boot启动！
 
 如果不能挂载，先在本地ubuntu试试能不能自己挂载自己:  
-sudo mount -t nfs 192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new /mnt  
+sudo mount -t nfs 192.168.50.62:/home/juo/rd_s3c2440/s3c2440/fs/fs_mini_mdev_new /mnt  
 若还不行，烧写dtb fs kernel到开发板，然后开发板内手动试试能不能挂载:
 ```c
-mount -t nfs -o nolock 192.168.50.62:/home/juo/rd_s3c2440/fs/fs_mini_mdev_new /mnt
+mount -t nfs -o nolock 192.168.50.62:/home/juo/rd_s3c2440/s3c2440/fs/fs_mini_mdev_new/fs_mini_mdev_new /mnt
 ```
 
 
@@ -117,6 +116,9 @@ mtddevname=bootloader
 set bootargs noinitrd root=/dev/mtdblock4 rw init=/linuxrc console=ttySAC0,115200
 ```
 
+6. 打印环境变量  
+printenv
+
 ## nand erase params
 
 ## 烧写完kernel、uboot然后nfs挂载根文件系统后一直提示bad magic number原因
@@ -124,9 +126,7 @@ set bootargs noinitrd root=/dev/mtdblock4 rw init=/linuxrc console=ttySAC0,11520
 
 ## nfs烧写设备树与uimage
 ```c
-nfs 30000000 192.168.50.199:/home/book/unisoc.juo/fs_mini_mdev_new/uImage; 
-
-nfs 32000000 192.168.50.199:/home/book/unisoc.juo/fs_mini_mdev_new/jz2440_irq.dtb; bootm 30000000 - 32000000
+nfs 30000000 192.168.50.62:/home/juo/rd_s3c2440/s3c2440/fs/fs_mini_mdev_new/uImage; nfs 32000000 192.168.50.62:/home/juo/rd_s3c2440/s3c2440/fs/fs_mini_mdev_new/jz2440_irq.dtb; bootm 30000000 - 32000000
 ```
 
 ## nfs下载
@@ -169,3 +169,7 @@ mkdir -p /lib/modules/$(uname -r)
 
 
 做完以上操作若rmmod不报错，但是还是驱动还是没有卸载，则把驱动的.ko去掉。
+
+## boot与uboot中b选项不一致问题
+uboot命令中boot不是nfs挂载的文件系统、且自行启动也不是进入nfs挂载的目录
+b则是进入挂载的文件系统

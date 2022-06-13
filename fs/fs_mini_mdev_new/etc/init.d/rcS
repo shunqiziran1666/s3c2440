@@ -1,0 +1,10 @@
+#!/bin/sh
+ifconfig eth0 up
+ifconfig eth0 192.168.50.188
+
+mount -a
+mkdir /dev/pts
+mount -t devpts devpts /dev/pts
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+
